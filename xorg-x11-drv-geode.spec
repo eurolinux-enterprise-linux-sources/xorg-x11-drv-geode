@@ -4,7 +4,7 @@
 
 Summary:   Xorg X11 AMD Geode video driver
 Name:      xorg-x11-drv-geode
-Version:   2.11.12
+Version:   2.11.13
 Release:   1%{?dist}
 URL:       http://www.x.org/wiki/AMDGeodeDriver
 Source0:   http://xorg.freedesktop.org/releases/individual/driver/xf86-video-geode-%{version}.tar.bz2
@@ -15,6 +15,8 @@ Provides:  xorg-x11-drv-amd = %{version}-%{release}
 Obsoletes: xorg-x11-drv-amd <= 2.7.7.7
 
 ExclusiveArch: %{ix86}
+
+Patch0: geode-git.patch
 
 BuildRequires: pkgconfig
 BuildRequires: autoconf
@@ -33,9 +35,10 @@ X.Org X11 AMD Geode video driver.
 
 %prep
 %setup -q -n %{tarball}-%{version}
+%patch0 -p1 -b .git
 
 %build
-autoreconf -v --install
+autoreconf -f -v --install
 %configure --disable-static --libdir=%{_libdir} --mandir=%{_mandir} \
 	     --enable-visibility
 make
@@ -62,6 +65,9 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/ztv_drv.so
 
 %changelog
+* Mon Aug 27 2012 Dave Airlie <airlied@redhat.com> 2.11.13-1
+- upstream release 2.11.13 + git build fix
+
 * Tue Jun 28 2011 Ben Skeggs <bskeggs@redhat.com> 2.11.12-1
 - upstream release 2.11.12
 
