@@ -981,7 +981,18 @@ df_set_video_palette_entry(unsigned long index, unsigned long palette)
     dcfg = READ_VID32(DF_DISPLAY_CONFIG);
     misc = READ_VID32(DF_VID_MISC);
 
-    dcfg |= DF_DCFG_GV_PAL_BYP;
+    /* Ensure that the Graphic data passes through the Gamma
+     * Correction RAM
+     *
+     * XXX is this a bug? perhaps it should be setting the bit so that video
+     * data is routed, according to the description above.
+     * it also mismatches df_set_video_palette().
+     */
+    dcfg &= ~DF_DCFG_GV_PAL_BYP;
+
+    /* Unset the "bypass both" bit to make sure the above selection (gfx/video
+     * data through gamma correction RAM) takes effect.
+     */
     misc &= ~DF_GAMMA_BYPASS_BOTH;
 
     WRITE_VID32(DF_DISPLAY_CONFIG, dcfg);

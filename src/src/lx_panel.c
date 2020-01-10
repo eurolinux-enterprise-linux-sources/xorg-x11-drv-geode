@@ -63,34 +63,43 @@ DisplayModeRec lx_panel_modes[] = {
     {MODEPREFIX, 81600, 1152, 1216, 1336, 1520, 0, 864, 865, 868, 895, 0,
 	V_NHSYNC | V_NVSYNC, MODESUFFIX}
     ,				       /* 1152x864@60 */
-    {MODEPREFIX, 108000, 1028, 1328, 1440, 1688, 0, 1024, 1025, 1028, 1066, 0,
+    {MODEPREFIX, 108000, 1280, 1328, 1440, 1688, 0, 1024, 1025, 1028, 1066, 0,
 	V_NHSYNC | V_NVSYNC, MODESUFFIX}
     ,				       /* 1280x1024@60 */
     {MODEPREFIX, 162000, 1600, 1664, 1856, 2160, 0, 1200, 1201, 1204, 1250, 0,
 	V_NHSYNC | V_NVSYNC, MODESUFFIX}
-    ,				       /* 1600x100@60 */
+    ,				       /* 1600x1200@60 */
+    {MODEPREFIX, 48960, 1024, 1064, 1168, 1312, 0, 600, 601, 604, 622, 0,
+        V_NHSYNC | V_NVSYNC, MODESUFFIX}
+    ,				       /* 1024x600@60 wide panels */
 };
 
 /* Get the legacy panel size from VSA, and return the associated mode rec */
 
 DisplayModePtr
-LXGetLegacyPanelMode(void)
+LXGetLegacyPanelMode(ScrnInfoPtr pScrni)
 {
     unsigned short reg = LX_READ_VG(0x00);
     unsigned char ret = (reg >> 8) & 0x07;
-
     if ((ret == 1 || ret == 5)) {
 
 	reg = LX_READ_VG(0x02);
 	ret = (reg >> 3) & 0x07;
 
-	/* 7 is a "reserved" value - if we get it, we can only
-	 * assume that a panel doesn't exist (or it hasn't been
-	 * configured in the BIOS)
+	/* FIXME: 7 is reserved in default. We use this value to support
+ 	 * wide screen resolution 1024x600@80 now for panel. If you want to use
+ 	 * that resolution, please assign ret to 7 manually here:
+ 	 * "reg = 7"
+ 	 * The user can use this entry for other wide screen resolutions.
 	 */
 
-	if (ret < 7)
+	if (ret < 8) {
+	    xf86DrvMsg(pScrni->scrnIndex, X_INFO,
+		" VSA Panel Mode is: %dx%d, pixel clock freq(kHz) is %d\n",
+		lx_panel_modes[ret].HDisplay, lx_panel_modes[ret].VDisplay,
+		lx_panel_modes[ret].Clock);
 	    return &lx_panel_modes[ret];
+	}
 
     }
 
@@ -124,6 +133,7 @@ LXGetManualPanelMode(char *modestr)
     sprintf(sname, "%dx%d", hactive, vactive);
 
     mode->name = xnfalloc(strlen(sname) + 1);
+    strcpy(mode->name, sname);
 
     mode->type = M_T_DRIVER | M_T_PREFERRED;
     mode->Clock = clock;

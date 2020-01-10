@@ -60,7 +60,7 @@
 #define LX      0x20
 
 #define PCI_VENDOR_ID_CYRIX  0x1078
-#define PCI_VENDOR_ID_NS     0x100B
+#define PCI_VENDOR_ID_NS     0x100b
 #define PCI_VENDOR_ID_AMD    0x1022
 
 #define PCI_CHIP_5530     0x0104
@@ -209,6 +209,8 @@ typedef struct _geodeRec
 
     int Pitch;			       /* display FB pitch */
     int displaySize;		       /* The size of the visibile area */
+
+    ExaOffscreenArea *shadowArea;
 
     /* Framebuffer memory */
 
@@ -452,7 +454,7 @@ void LXInitVideo(ScreenPtr pScrn);
 void LXSetupOutput(ScrnInfoPtr);
 
 /* lx_panel.c */
-DisplayModePtr LXGetLegacyPanelMode(void);
+DisplayModePtr LXGetLegacyPanelMode(ScrnInfoPtr pScrni);
 DisplayModePtr LXGetManualPanelMode(char *modestr);
 
 void LXAdjustFrame(int scrnIndex, int x, int y, int flags);

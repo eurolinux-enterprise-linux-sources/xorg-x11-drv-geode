@@ -26,9 +26,13 @@
  * software without specific prior written permission.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "xf86.h"
+#include "xf86Modes.h"
 #include "os.h"
-#include "mibank.h"
 #include "globals.h"
 #include "xf86.h"
 #include "xf86Priv.h"
@@ -56,15 +60,21 @@ typedef struct _GXRandRInfo
     Rotation supported_rotations;      /* driver supported */
 } XF86RandRInfoRec, *XF86RandRInfoPtr;
 
-#define AMD_OLDPRIV (GET_ABI_MAJOR(ABI_VIDEODRV_VERSION) < 4)
-
-static int GXRandRIndex;
-
-#if AMD_OLDPRIV
-#define XF86RANDRINFO(p) ((XF86RandRInfoPtr) (p)->devPrivates[GXRandRIndex].ptr)
+#if HAS_DEVPRIVATEKEYREC
+static DevPrivateKeyRec GXRandRIndex;
 #else
-#define XF86RANDRINFO(p) ((XF86RandRInfoPtr) \
-			  dixLookupPrivate(&(p)->devPrivates, &GXRandRIndex));
+static int GXRandRIndex;
+#endif
+
+#define OLD_VIDEODRV_INTERFACE (GET_ABI_MAJOR(ABI_VIDEODRV_VERSION) < 4)
+
+#if OLD_VIDEODRV_INTERFACE
+#define XF86RANDRINFO(p)   ((XF86RandRInfoPtr) (p)->devPrivates[GXRandRIndex].ptr)
+#define XF86RANDRSET(p, v) (p)->devPrivates[GXRandRIndex].ptr = v
+#else
+#define XF86RANDRINFO(p) ((XF86RandRInfoPtr)						\
+			  dixLookupPrivate(&(p)->devPrivates, &GXRandRIndex))
+#define XF86RANDRSET(p, v) dixSetPrivate(&(p)->devPrivates, &GXRandRIndex, v)
 #endif
 
 static int
@@ -159,10 +169,16 @@ GXRandRSetMode(ScreenPtr pScreen,
     int oldHeight = pScreen->height;
     int oldmmWidth = pScreen->mmWidth;
     int oldmmHeight = pScreen->mmHeight;
+#if GET_ABI_MAJOR(ABI_VIDEODRV_VERSION) < 8
     WindowPtr pRoot = WindowTable[pScreen->myNum];
+#else
+    WindowPtr pRoot = pScreen->root;
+#endif
     DisplayModePtr currentMode = NULL;
     Bool ret = TRUE;
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1,9,99,1,0)
     PixmapPtr pspix = NULL;
+ #endif
 
     if (pRoot)
 	(*pScrni->EnableDisableFBAccess) (pScreen->myNum, FALSE);
@@ -201,16 +217,16 @@ GXRandRSetMode(ScreenPtr pScreen,
 	pScrni->currentMode = currentMode;
     }
 
+#if XORG_VERSION_CURRENT < XORG_VERSION_NUMERIC(1,9,99,1,0)
     /*
      * Get the new Screen pixmap ptr as SwitchMode might have called
      * ModifyPixmapHeader and xf86EnableDisableFBAccess will put it back...
      * Unfortunately.
-     
      */
-
     pspix = (*pScreen->GetScreenPixmap) (pScreen);
     if (pspix->devPrivate.ptr)
 	pScrni->pixmapPrivate = pspix->devPrivate;
+#endif
 
     xf86ReconfigureLayout();
 
@@ -327,16 +343,20 @@ GXRandRInit(ScreenPtr pScreen, int rotation)
     if (GXRandRGeneration != serverGeneration) {
 	GXRandRGeneration = serverGeneration;
     }
-#if AMD_OLDPRIV
+#if OLD_VIDEODRV_INTERFACE
     GXRandRIndex = AllocateScreenPrivateIndex();
 #endif
+#if HAS_DIXREGISTERPRIVATEKEY
+    if (!dixRegisterPrivateKey(&GXRandRIndex, PRIVATE_SCREEN, 0))
+	return FALSE;
+#endif
 
-    pRandr = xcalloc(sizeof(XF86RandRInfoRec), 1);
+    pRandr = calloc(sizeof(XF86RandRInfoRec), 1);
     if (pRandr == NULL)
 	return FALSE;
 
     if (!RRScreenInit(pScreen)) {
-	xfree(pRandr);
+	free(pRandr);
 	return FALSE;
     }
 
@@ -354,10 +374,7 @@ GXRandRInit(ScreenPtr pScreen, int rotation)
     pRandr->supported_rotations = rotation;
     pRandr->maxX = pRandr->maxY = 0;
 
-#if AMD_OLDPRIV
-    pScreen->devPrivates[GXRandRIndex].ptr = pRandr;
-#else
-    dixSetPrivate(&pScreen->devPrivates, &GXRandRIndex, pRandr);
-#endif
+    XF86RANDRSET(pScreen, pRandr);
+
     return TRUE;
 }

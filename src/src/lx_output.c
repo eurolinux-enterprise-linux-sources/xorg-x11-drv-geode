@@ -108,7 +108,7 @@ lx_output_set_property(xf86OutputPtr output, Atom property,
 
 	    if (!ret) {
 		xf86DrvMsg(pScrni->scrnIndex, X_ERROR,
-		    "Failed to set mode after propery change!\n");
+		    "Failed to set mode after property change!\n");
 
 		pGeode->Scale = scale;
 		return FALSE;
@@ -155,13 +155,32 @@ lx_output_mode_valid(xf86OutputPtr output, DisplayModePtr pMode)
     ScrnInfoPtr pScrni = output->scrn;
     GeodeRec *pGeode = GEODEPTR(pScrni);
 
-    /* No scaling > for modes with > 1024 width */
-
-    if (pGeode->Output & OUTPUT_PANEL) {
-	if ((pMode->HDisplay != pGeode->panelMode->HDisplay) &&
-	    pMode->HDisplay > 1024)
-	    return MODE_BAD;
+    /* DCON Panel specific resolution - OLPC's one */
+    if (pGeode->Output & OUTPUT_DCON) {
+        if (pGeode->panelMode->HDisplay == 1200 &&
+            pGeode->panelMode->VDisplay == 900)
+            return MODE_OK;
     }
+
+    if ((pGeode->Output & OUTPUT_PANEL) &&
+        gfx_is_panel_mode_supported(pGeode->panelMode->HDisplay,
+                                    pGeode->panelMode->VDisplay,
+                                    pMode->HDisplay,
+                                    pMode->VDisplay,
+                                    pScrni->bitsPerPixel) != -1) {
+
+        return MODE_OK;
+    }
+
+    if (gfx_is_display_mode_supported(pMode->HDisplay,
+                                      pMode->VDisplay,
+                                      pScrni->bitsPerPixel,
+                                      GeodeGetRefreshRate(pMode)) != -1) {
+        return MODE_OK;
+    }
+
+    if (pMode->type & (M_T_DRIVER | M_T_PREFERRED))
+        return MODE_OK;
 
     return MODE_OK;
 }
@@ -223,10 +242,18 @@ static void
 lx_output_destroy(xf86OutputPtr output)
 {
     if (output->driver_private)
-	xfree(output->driver_private);
+	free(output->driver_private);
 
     output->driver_private = NULL;
 }
+
+#ifdef RANDR_GET_CRTC_INTERFACE
+static xf86CrtcPtr lx_output_get_crtc(xf86OutputPtr output)
+{
+    return output->crtc;
+}
+#endif
+
 
 static const xf86OutputFuncsRec lx_output_funcs = {
     .create_resources = lx_create_resources,
@@ -240,6 +267,9 @@ static const xf86OutputFuncsRec lx_output_funcs = {
     .commit = lx_output_commit,
     .detect = lx_output_detect,
     .get_modes = lx_output_get_modes,
+#ifdef RANDR_GET_CRTC_INTERFACE
+    .get_crtc = lx_output_get_crtc,
+#endif
     .set_property = lx_output_set_property,
     .destroy = lx_output_destroy,
 };
