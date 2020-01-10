@@ -4,48 +4,36 @@
 
 Summary:   Xorg X11 AMD Geode video driver
 Name:      xorg-x11-drv-geode
-Version:   2.11.13
+Version:   2.11.15
 Release:   1%{?dist}
 URL:       http://www.x.org/wiki/AMDGeodeDriver
 Source0:   http://xorg.freedesktop.org/releases/individual/driver/xf86-video-geode-%{version}.tar.bz2
 License:   MIT
 Group:     User Interface/X Hardware Support
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Provides:  xorg-x11-drv-amd = %{version}-%{release}
-Obsoletes: xorg-x11-drv-amd <= 2.7.7.7
+
+Patch1:    geode-2.11.14-ftbfs.patch
 
 ExclusiveArch: %{ix86}
 
-Patch0: geode-git.patch
-
 BuildRequires: pkgconfig
-BuildRequires: autoconf
-BuildRequires: automake
-BuildRequires: libtool
-BuildRequires: xorg-x11-server-sdk
+BuildRequires: xorg-x11-server-devel
 BuildRequires: xorg-x11-proto-devel
 
-Requires:  Xorg %(xserver-sdk-abi-requires ansic)
-Requires:  Xorg %(xserver-sdk-abi-requires videodrv)
-
-BuildRequires: autoconf automake
+Requires:  xorg-x11-server-Xorg >= 1.1.0
 
 %description 
 X.Org X11 AMD Geode video driver.
 
 %prep
 %setup -q -n %{tarball}-%{version}
-%patch0 -p1 -b .git
+%patch1 -p1
 
 %build
-autoreconf -f -v --install
 %configure --disable-static --libdir=%{_libdir} --mandir=%{_mandir} \
 	     --enable-visibility
 make
 
 %install
-rm -rf $RPM_BUILD_ROOT
-
 %makeinstall DESTDIR=$RPM_BUILD_ROOT
 
 # FIXME: Remove all libtool archives (*.la) from modules directory.  This
@@ -55,9 +43,6 @@ find $RPM_BUILD_ROOT -regex ".*\.la$" | xargs rm -f --
 # Compat symlink for legacy driver name so existing xorg.conf's do not break
 ln -s geode_drv.so $RPM_BUILD_ROOT%{_libdir}/xorg/modules/drivers/amd_drv.so
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 %files
 %defattr(-,root,root,-)
 %{driverdir}/amd_drv.so
@@ -65,11 +50,103 @@ rm -rf $RPM_BUILD_ROOT
 %{driverdir}/ztv_drv.so
 
 %changelog
-* Mon Aug 27 2012 Dave Airlie <airlied@redhat.com> 2.11.13-1
-- upstream release 2.11.13 + git build fix
+* Sun Nov 24 2013 Peter Robinson <pbrobinson@fedoraproject.org> 2.11.15-1
+- New upstream release
 
-* Tue Jun 28 2011 Ben Skeggs <bskeggs@redhat.com> 2.11.12-1
-- upstream release 2.11.12
+* Wed Nov 20 2013 Adam Jackson <ajax@redhat.com> - 2.11.14-11
+- 1.15RC2 ABI rebuild
+
+* Wed Nov 06 2013 Adam Jackson <ajax@redhat.com> - 2.11.14-10
+- 1.15RC1 ABI rebuild
+
+* Fri Oct 25 2013 Adam Jackson <ajax@redhat.com> 2.11.14-9
+- Fix FTBFS against 1.15
+
+* Fri Oct 25 2013 Adam Jackson <ajax@redhat.com> - 2.11.14-8
+- ABI rebuild
+
+* Sun Aug 04 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.11.14-7
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
+* Thu Mar 07 2013 Peter Hutterer <peter.hutterer@redhat.com> - 2.11.14-6
+- require xorg-x11-server-devel, not -sdk
+
+* Thu Mar 07 2013 Peter Hutterer <peter.hutterer@redhat.com> - 2.11.14-5
+- ABI rebuild
+
+* Fri Feb 15 2013 Peter Hutterer <peter.hutterer@redhat.com> - 2.11.14-4
+- ABI rebuild
+
+* Fri Feb 15 2013 Peter Hutterer <peter.hutterer@redhat.com> - 2.11.14-3
+- ABI rebuild
+
+* Thu Jan 10 2013 Adam Jackson <ajax@redhat.com> - 2.11.14-2
+- ABI rebuild
+
+* Mon Nov 26 2012 Daniel Drake <dsd@laptop.org> 2.11.14-1
+- New upstream release
+
+* Tue Nov 20 2012 Daniel Drake <dsd@laptop.org> 2.11.13-5
+- Fix GNOME notification area rendering bug
+
+* Tue Oct 30 2012 Daniel Drake <dsd@laptop.org> 2.11.13-4
+- Add solid picture acceleration to maintain glyph rendering performance
+  and work around an X glyph rendering bug (freedesktop#55723).
+
+* Mon Aug 06 2012 Dave Airlie <airlied@redhat.com> 2.11.13-3
+- update from git to make build
+
+* Sun Jul 22 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.11.13-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
+
+* Fri Jul  6 2012 Daniel Drake <dsd@laptop.org> - 2.11.13-1
+- New version
+
+* Wed Feb  8 2012 Peter Robinson <pbrobinson@fedoraproject.org> - 2.11.12-4
+- Rebuild for Xorg ABI version bump
+
+* Sat Jan 14 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.11.12-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
+
+* Thu Nov 17 2011 Peter Robinson <pbrobinson@fedoraproject.org> - 2.11.12-3
+- Rebuild for Xorg ABI version bump
+- Drop ancient obsoletes and clean up spec
+
+* Tue Sep 13 2011 Daniel Drake <dsd@laptop.org> - 2.11.12-2
+- rebuild for Xorg ABI version 11
+
+* Thu Mar 17 2011 Daniel Drake <dsd@laptop.org> - 2.11.12-1
+- update to v2.11.12 (no changes over 2.11.11-4, but rebuild for new X ABI)
+
+* Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.11.11-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
+* Mon Feb  7 2011 Daniel Drake <dsd@laptop.org> - 2.11.11-4
+- add upstream patch to compile with new kernel headers without v4l1
+
+* Mon Feb  7 2011 Daniel Drake <dsd@laptop.org> - 2.11.11-3
+- add upstream patch to fix Xv video corruption (fd.o #33004)
+
+* Thu Jan 13 2011 Daniel Drake <dsd@laptop.org> - 2.11.11-2
+- update to 2.11.11
+
+* Sun Dec 12 2010 Daniel Drake <dsd@laptop.org> - 2.11.10-2
+- fix compile on xorg-1.9.99
+
+* Wed Dec  1 2010 Daniel Drake <dsd@laptop.org> - 2.11.10-1
+- update to 2.11.10
+
+* Wed Sep 01 2010 Bernie Innocenti <bernie@codewiz.org> 2.11.9-1
+- update to 2.11.9
+
+* Mon Jul 05 2010 Dave Airlie <airlied@redhat.com> 2.11.4.1-4
+- update to geode git for latest server API
+
+* Mon Jul 05 2010 Peter Hutterer <peter.hutterer@redhat.com> - 2.11.4.1-3
+- rebuild for X Server 1.9
+
+* Thu Jan 21 2010 Peter Hutterer <peter.hutterer@redhat.com> - 2.11.4.1-2
+- Rebuild for server 1.8
 
 * Thu Sep 10 2009 Dave Airlie <airlied@redhat.com> 2.11.4.1-1
 - geode 2.11.4.1
@@ -128,106 +205,3 @@ rm -rf $RPM_BUILD_ROOT
 * Wed Apr 02 2008 Warren Togami <wtogami@redhat.com> 2.8.0-1
 - 2.8.0 rename from amd to geode
   compat symlink to old name retains old xorg.conf compat
-
-* Fri Mar 14 2008 Warren Togami <wtogami@redhat.com> 2.7.7.7-2
-- proper versioned provides
-
-* Fri Mar 14 2008 Warren Togami <wtogami@redhat.com> 2.7.7.7-1
-- 2.7.7.7
-
-* Mon Mar 10 2008 Dave Airlie <airlied@redhat.com> 0.0-26.20080310
-- finally pciaccess build for AMD
-
-* Mon Mar 10 2008 Dave Airlie <airlied@redhat.com> 0.0-25.20080310
-- resnapshot for pciaccess goodness
-
-* Mon Mar 10 2008 Dave Airlie <airlied@redhat.com> 0.0-24.20070625
-- pciaccess fixups
-
-* Wed Feb 20 2008 Fedora Release Engineering <rel-eng@fedoraproject.org> - 0.0-23.20070625
-- Autorebuild for GCC 4.3
-
-* Wed Jun 25 2007 Dan Williams <dcbw@redhat.com> 0.0-22.20070625
-- Udpate to git snapshot
-   - Fix downscaling on the LX
-   - cairo 1.4.4 and Xorg 1.3 fixes
-
-* Wed Jun 13 2007 Dan Williams <dcbw@redhat.com> 0.0-21.20070613
-- Udpate to git snapshot
-
-* Mon May 07 2007 Dan Williams <dcbw@redhat.com> 0.0-21.20070504
-- Cleanups and fixes from -Wall
-
-* Fri May 04 2007 Dan Williams <dcbw@redhat.com> 0.0-20.20070504
-- Better OOM handling
-- RandR fixes
-
-* Thu May 03 2007 Dan Williams <dcbw@redhat.com> 0.0-19.20070503
-- Fix QueryImageAttributes handler for GX
-- Get correct prototype for memset/memcpy
-
-* Thu May 03 2007 Dan Williams <dcbw@redhat.com> 0.0-18.20070503
-- VGA port fixes
-- Fixes for Xv color key mode
-
-* Fri Apr 27 2007 Adam Jackson <ajax@redhat.com> 0.0-17.20070427
-- Fix alpha blending.
-
-* Tue Apr 24 2007 Adam Jackson <ajax@redhat.com> 0.0-16.20070424
-- Misc LX fixes.
-
-* Thu Apr 19 2007 Adam Jackson <ajax@redhat.com> 0.0-15.20070418
-- Disable compression on LX for now, it's busted.
-
-* Wed Apr 18 2007 Adam Jackson <ajax@redhat.com> 0.0-14.20070418
-- Geode LX branch work
-
-* Sat Feb  3 2007 Dan Williams <dcbw@redhat.com> 0.0-13.20070203.olpc1
-- Fix segfault when accel is disabled
-
-* Tue Jan 16 2007 Adam Jackson <ajax@redhat.com> 0.0-13.20070116.olpc1
-- Fix EXA setup.
-
-* Mon Jan 15 2007 Adam Jackson <ajax@redhat.com> 0.0-12.20070115.olpc1
-- More Xv fixes, mode sync wonkiness, distcheck fix.
-
-* Thu Jan 11 2007 Adam Jackson <ajax@redhat.com> 0.0-11.20070111.olpc1
-- Xv fixes, RANDR fixes, minor crash fix.
-
-* Thu Jan 04 2007 Adam Jackson <ajax@redhat.com> 0.0-10.20070104.olpc1
-- Pull from dev.laptop.org: RANDR support, misc cleanup.
-
-* Thu Nov 9 2006 Adam Jackson <ajackson@redhat.com> 0.0-9.20061109git.olpc1
-- Today's update: DCON support, etc.
-
-* Mon Oct 16 2006 Adam Jackson <ajackson@redhat.com> 0.0-8.20061016git.fc7
-- Today's snapshot: More Xv love.
-- Add check for (and abort on existance of) .git directory in the work dir.
-
-* Thu Oct 12 2006 Adam Jackson <ajackson@redhat.com> 0.0-7.20061012git.fc6
-- Today's snapshot: Xv fixes.
-
-* Fri Oct 6 2006 Adam Jackson <ajackson@redhat.com> 0.0-6.20060821git.fc6
-- Add visibility fixes, and build with -fvisibility=hidden for size.
-
-* Mon Aug 21 2006 Adam Jackson <ajackson@redhat.com> 0.0-5.20060821git.fc6
-- Today's snapshot: EXA fixes.
-
-* Wed Aug 16 2006 Adam Jackson <ajackson@redhat.com> 0.0-4.20060816git.fc6
-- Un-reset the Release: number.
-
-* Wed Aug 16 2006 Adam Jackson <ajackson@redhat.com> 0.0-1.20060816git.fc6
-- git update: more Xv fixes.
-
-* Wed Aug  9 2006 Adam Jackson <ajackson@redhat.com> 0.0-3.20060809git.fc6
-- Fix FC5 Requires too.
-
-* Wed Aug  9 2006 Adam Jackson <ajackson@redhat.com> 0.0-2.20060809git.fc6
-- FC5 build fixes, mostly BuildRequires.
-
-* Wed Aug  9 2006 Adam Jackson <ajackson@redhat.com> 0.0-1.20060809git.fc6
-- git update: olpc dcon support, Xv fixes.
-- Attempted support for building against FC5.
-
-* Fri Jul  7 2006 Adam Jackson <ajackson@redhat.com> 0.0-0.git20060706.fc6
-- Initial spec (from -nsc) and git snapshot.
