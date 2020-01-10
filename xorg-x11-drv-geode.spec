@@ -4,14 +4,12 @@
 
 Summary:   Xorg X11 AMD Geode video driver
 Name:      xorg-x11-drv-geode
-Version:   2.11.15
+Version:   2.11.17
 Release:   1%{?dist}
 URL:       http://www.x.org/wiki/AMDGeodeDriver
 Source0:   http://xorg.freedesktop.org/releases/individual/driver/xf86-video-geode-%{version}.tar.bz2
 License:   MIT
 Group:     User Interface/X Hardware Support
-
-Patch1:    geode-2.11.14-ftbfs.patch
 
 ExclusiveArch: %{ix86}
 
@@ -26,7 +24,6 @@ X.Org X11 AMD Geode video driver.
 
 %prep
 %setup -q -n %{tarball}-%{version}
-%patch1 -p1
 
 %build
 %configure --disable-static --libdir=%{_libdir} --mandir=%{_mandir} \
@@ -50,6 +47,9 @@ ln -s geode_drv.so $RPM_BUILD_ROOT%{_libdir}/xorg/modules/drivers/amd_drv.so
 %{driverdir}/ztv_drv.so
 
 %changelog
+* Wed Nov 11 2015 Adam Jackson <ajax@redhat.com> 2.11.17-1
+- geode 2.11.17
+
 * Sun Nov 24 2013 Peter Robinson <pbrobinson@fedoraproject.org> 2.11.15-1
 - New upstream release
 
